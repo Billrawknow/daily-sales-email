@@ -1,0 +1,19 @@
+time,receipt_no,item,quantity,unit_price
+08:12,R0001,Unga Pembe 2kg,3,195
+08:12,R0001,Kimbo 1kg,1,420
+08:35,R0002,Brookside Milk 500ml,4,65
+09:02,R0003,Sugar 2kg,2,330
+09:02,R0003,Bread 400g,2,65
+09:47,R0004,Unga Pembe 2kg,5,195
+10:15,R0005,Cooking Gas Refill 6kg,1,1350
+10:40,R0006,Brookside Milk 500ml,6,65
+11:05,R0007,Rice Pishori 2kg,1,480
+11:05,R0007,Sugar 2kg,1,330
+12:30,R0008,Unga Pembe 2kg,4,195
+13:10,R0009,Omo 1kg,2,310
+14:22,R0010,Bread 400g,5,65
+15:01,R0011,Brookside Milk 500ml,3,65
+15:45,R0012,Kimbo 1kg,2,420
+16:20,R0013,Unga Pembe 2kg,6,195
+17:05,R0014,Rice Pishori 2kg,2,480
+17:40,R0015,Sugar 2kg,3,330
