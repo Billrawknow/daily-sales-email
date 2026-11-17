@@ -16,12 +16,12 @@ Files:
 Usage:
     python daily_sales_report.py --preview   # build the email and save preview.html - nothing is sent
     python daily_sales_report.py             # send the email
-Schedule it for 6 PM with Windows Task Scheduler (see README).
+Every run adds one line to run_log.txt: date | time | status | rows processed | manual/scheduled | detail.
+Schedule it for 6 PM: double-click setup.bat (Windows) - see README.
 """
 
 import argparse
 import csv
-import logging
 import os
 import smtplib
 import ssl
@@ -41,8 +41,18 @@ SHOP_NAME = os.getenv("SHOP_NAME", "Baraka Mini Mart")
 SALES_FILE = HERE / "sales.csv"
 STOCK_FILE = HERE / "stock.csv"
 PREVIEW_FILE = HERE / "preview.html"
-logging.basicConfig(filename=HERE / "email_log.txt", level=logging.INFO,
-                    format="%(asctime)s | %(levelname)s | %(message)s")
+RUN_LOG = HERE / "run_log.txt"
+
+
+def write_run_log(status, rows, trigger, detail=""):
+    """Append one line per run: date | time | status | rows processed | how it ran | detail."""
+    now = datetime.now()
+    line = f"{now:%Y-%m-%d} | {now:%H:%M:%S} | {status:<7} | {rows:>3} rows | {trigger:<9} | {detail}"
+    try:
+        with open(RUN_LOG, "a", encoding="utf-8") as log:
+            log.write(line.rstrip() + "\n")
+    except OSError:
+        pass                      # never let a logging problem stop the report
 
 
 class ReportError(Exception):
@@ -223,11 +233,16 @@ def send(msg):
 def main():
     parser = argparse.ArgumentParser(description="Email today's sales summary.")
     parser.add_argument("--preview", action="store_true", help="save preview.html instead of sending")
+    parser.add_argument("--scheduled", action="store_true", help=argparse.SUPPRESS)  # set by the scheduler
     args = parser.parse_args()
+    trigger = "scheduled" if args.scheduled else "manual"
     day = datetime.now()
+    rows = 0
     try:
         sales, skipped = load_sales()
+        rows = len(sales)
         metrics = calculate(sales, load_stock())
+        note = f"{len(skipped)} bad row(s) skipped (line {', '.join(map(str, skipped))}); " if skipped else ""
         if skipped:
             print(f"Note: skipped {len(skipped)} unreadable row(s) in sales.csv (line {', '.join(map(str, skipped))}).")
 
@@ -235,6 +250,7 @@ def main():
         if args.preview:
             PREVIEW_FILE.write_text(build_html(metrics, day), encoding="utf-8")
             print(f"Preview saved to {PREVIEW_FILE.name} - open it in your browser. Nothing was sent.")
+            write_run_log("SUCCESS", rows, trigger, note + "preview only, nothing sent")
             return
 
         sender, recipient = os.getenv("GMAIL_ADDRESS", "").strip(), os.getenv("REPORT_TO", "").strip()
@@ -242,11 +258,15 @@ def main():
             raise ReportError("Add GMAIL_ADDRESS, GMAIL_APP_PASSWORD and REPORT_TO to the .env file.")
         send(build_message(metrics, day, sender, recipient))
         print(f"Sent to {recipient}")
-        logging.info("SENT to %s | revenue %s | %s transactions | %s low-stock",
-                     recipient, kes(metrics["revenue"]), metrics["transactions"], len(metrics["low_stock"]))
+        write_run_log("SUCCESS", rows, trigger,
+                      note + f"sent to {recipient} | revenue {kes(metrics['revenue'])}, "
+                             f"{metrics['transactions']} transactions, {len(metrics['low_stock'])} to restock")
     except ReportError as err:
-        logging.error("FAILED | %s", err)
+        write_run_log("ERROR", rows, trigger, str(err))
         sys.exit(f"Sorry: {err}")
+    except Exception as err:     # anything unexpected must still reach the log - nobody watches at 6 PM
+        write_run_log("ERROR", rows, trigger, f"unexpected {type(err).__name__}: {err}")
+        raise
 
 
 if __name__ == "__main__":

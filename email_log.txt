@@ -1,0 +1,2 @@
+2026-11-12 11:05:55,844 | INFO | SENT to info@rawknow.co.ke | revenue KES 11,460 | 15 transactions | 2 low-stock
+2026-11-12 11:07:20,954 | INFO | SENT to info@rawknow.co.ke, Pilgrimvn@gmail.com | revenue KES 11,460 | 15 transactions | 2 low-stock
